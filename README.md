@@ -4,7 +4,7 @@
 
 **PhD** **Supervisors**: Vinitra Swamy, Paola Mejia
 
-**Student**: Summer@EPFL, Fall 2023
+**Student**: Summer@EPFL, Summer 2023
 
 💡 This project is aimed at creating a new clustering pipeline designed for explainability.  
 

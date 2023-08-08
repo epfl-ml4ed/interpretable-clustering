@@ -14,7 +14,7 @@ VAL_SIZE = 0.1
 
 WEEK_TYPE = 'eq_week'
 
-def preprocess(course, path, percentile, feature_types, metadata):
+def preprocess(course, path, percentile, feature_types, metadata, hard_fail):
     ''' Pre-process data related to given course and perform train-val-test split
 
     Args:
@@ -33,13 +33,11 @@ def preprocess(course, path, percentile, feature_types, metadata):
     num_weeks = int(np.round(total_weeks * percentile))
     filepath = path + '/pattern_labels-' + course + '.csv'
     labels = pd.read_csv(filepath)[['label-pass-fail', 'effort', 'consistency', 'proactivity', 'control', 'assessment']]
-
-    marras_feats = pd.read_csv(f'{path}/eq_week-marras_et_al-{course}/feature_labels.csv')
-    number_id_mapping = pd.read_csv(f'{path}/user_id_mapping-{course}.csv')
-
-    merged = pd.merge(number_id_mapping, marras_feats, left_index=True, right_index=True, how='inner')
-    hard_fail_idx = merged['Unnamed: 0']
     
+    df_hard_fail = pd.read_csv(hard_fail)
+    hard_fail_idx = df_hard_fail['Unnamed: 0'].tolist()
+    labels = labels.values[hard_fail_idx]
+
     for feature_type in feature_types:
         filepath = path + WEEK_TYPE + '-' + feature_type + '-' + course
 
@@ -62,9 +60,8 @@ def preprocess(course, path, percentile, feature_types, metadata):
         names_list += names
         
     course_features = np.concatenate(feature_list, axis=2)
-
     # Train-val-test split
-    x_train, x_test_v, y_train, y_test_v = train_test_split(course_features, labels.values, test_size=TEST_SIZE + VAL_SIZE, random_state=0, stratify=labels['label-pass-fail'])
+    x_train, x_test_v, y_train, y_test_v = train_test_split(course_features, labels, test_size=TEST_SIZE + VAL_SIZE, random_state=0, stratify=df_hard_fail['label-pass-fail'])
     x_test, x_val, y_test, y_val = train_test_split(x_test_v, y_test_v, test_size=VAL_SIZE/(TEST_SIZE + VAL_SIZE), random_state=0, stratify=y_test_v[:, 0])
 
     # Separate prediction label from student pattern labels
@@ -73,3 +70,5 @@ def preprocess(course, path, percentile, feature_types, metadata):
     y_test, pat_test = y_test[:, 0], y_test[:, 1:]
     
     return x_train, x_test, x_val, y_train, y_test, y_val, names_list, (pat_train, pat_val, pat_test)
+
+

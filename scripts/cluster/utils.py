@@ -124,7 +124,7 @@ def get_truncated_features_flatten(MODEL_PATH, filename, course, path, percentil
 
 
 def get_x_flatten(course, path, percentile, feature_types, metadata, hard_fail):
-    x_train, x_test, x_val, y_train, y_test, y_val, feature_names , _ = preprocess(course, path, percentile, feature_types, metadata, hard_fail)
+    x_train, x_test, x_val, y_train, y_test, y_val, feature_names , patterns = preprocess(course, path, percentile, feature_types, metadata, hard_fail)
     X = np.concatenate([x_train, x_val, x_test], axis=0)
     Y = np.concatenate([y_train, y_val, y_test], axis=0)
     P = np.concatenate(patterns, axis=0)

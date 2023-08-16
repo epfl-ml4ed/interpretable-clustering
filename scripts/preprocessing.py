@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, MinMaxScaler
 
 TRAIN_SIZE = 0.8
 TEST_SIZE = 0.1
@@ -37,6 +37,7 @@ def preprocess(course, path, percentile, feature_types, metadata, hard_fail):
     df_hard_fail = pd.read_csv(hard_fail)
     hard_fail_idx = df_hard_fail['Unnamed: 0'].tolist()
     labels = labels.values[hard_fail_idx]
+    scaler = MinMaxScaler()
 
     for feature_type in feature_types:
         filepath = path + WEEK_TYPE + '-' + feature_type + '-' + course
@@ -49,7 +50,8 @@ def preprocess(course, path, percentile, feature_types, metadata, hard_fail):
                                                              (0, 0)), mode='constant', constant_values=0)
         # RNN mode
         feature_norm = feature_current.reshape(labels.shape[0], -1)
-        feature_norm = normalize(feature_norm)
+        # feature_norm = normalize(feature_norm)
+        feature_norm = scaler.fit_transform(feature_norm)
         feature_current = feature_norm.reshape(feature_current.shape)
 
         feature_list.append(feature_current)

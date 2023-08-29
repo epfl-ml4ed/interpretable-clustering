@@ -6,6 +6,8 @@ from sklearn.cluster import KMeans, OPTICS, SpectralClustering
 from sklearn.metrics import pairwise_distances
 from tslearn.metrics import cdist_dtw
 import numpy as np
+from scipy.sparse.csgraph import laplacian
+from scipy import linalg
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path+"/scripts")
@@ -47,6 +49,21 @@ def compute_distance_matrix(X, metric):
 
     return distance_sum / X.shape[2]
 
+def eigengap(S):
+    # Compute eigengap heuristic
+    max_clusters = 10
+    L = laplacian(S, normed=True)
+    eigenvals, _ = linalg.eig(L)
+    eigenvals = np.real(eigenvals)
+    eigenvals_sorted = eigenvals[np.argsort(eigenvals)]
+    if max_clusters:
+        eigenvals_sorted = eigenvals_sorted[:max_clusters]
+    # Find the largest gap between consecutive eigenvalues    
+    index_largest_gap = np.argsort(np.diff(eigenvals_sorted))[::-1][:5]
+    nb_clusters = index_largest_gap + 1
+    
+    return nb_clusters
+
 def compute_number_clusters(data, model, metric, distance_matrix=[], minimization=False, verbose=True):
     '''
         minimization: if True the evaluated metric is a minimization problem 
@@ -57,7 +74,7 @@ def compute_number_clusters(data, model, metric, distance_matrix=[], minimizatio
         best_score = 0
     best_n = 0
     best_labels = []
-    for n in range(2, 8):
+    for n in range(3, 7):
         labels = model(n).fit_predict(data)
         if distance_matrix != []:
             score = metric(distance_matrix, labels, metric='precomputed')
@@ -106,12 +123,19 @@ def get_truncated_features(MODEL_PATH, filename, course, path, percentile, featu
     
     X_a = tf.gather(X, activated, axis=-1)
     X_a = X_a.numpy()
+
+    # # Replace 0 by nan
+    # condition = tf.equal(masks_a, 0)
+    # masks_nan = tf.where(condition, np.nan, masks_a)
     
     # Expand masks to repeat for each week
     masks_expanded = tf.expand_dims(masks_a, axis=1)
     masks_expanded = tf.repeat(masks_expanded, repeats=[X_a.shape[1]], axis=1)
     # masks_expanded.shape
     X_masked = masks_expanded*X_a
+
+    # X_masked = tf.where(tf.math.is_nan(X_masked), -1, X_masked)
+
 
     return feature_names, masks, X_masked, X, Y, P
 

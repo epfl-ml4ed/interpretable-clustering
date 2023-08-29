@@ -18,10 +18,13 @@ def create_flow(data1, data2, label1, label2, Y):
             target.append(label2+'_'+str(j))
             values.append(len(fail))
 
-def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y):
+def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y, gamma=False, g=0):
     labels = {}
     for p in percentile_list:
-        labels[p] = np.loadtxt(labels_cluster_path+filename+str(p)+'.txt', dtype=int)
+        if gamma:
+            labels[p] = np.loadtxt(labels_cluster_path+filename+str(p)+'_gamma_'+str(g)+'.txt', dtype=int)
+        else:
+            labels[p] = np.loadtxt(labels_cluster_path+filename+str(p)+'.txt', dtype=int)
    
     node_label = []
     for p in percentile_list:

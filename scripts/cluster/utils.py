@@ -95,13 +95,12 @@ def compute_number_clusters(data, model, metric, distance_matrix=[], minimizatio
 
     return best_score, best_n, best_labels
 
-def get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, hard_fail):
-    x_train, x_test, x_val, y_train, y_test, y_val, feature_names, patterns = preprocess(course, path, percentile, feature_types, metadata, hard_fail)
+def get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, norm='min-max'):
+    x_train, x_test, x_val, y_train, y_test, y_val, feature_names = preprocess(course, path, percentile, feature_types, metadata, normalization=norm)
     
     # Concat features & labels
     X = np.concatenate([x_train, x_val, x_test], axis=0)
     Y = np.concatenate([y_train, y_val, y_test], axis=0)
-    P = np.concatenate(patterns, axis=0)
     
     # Set up parameters and model to train
     meta = {'gumbel_temp': 1, 'gumbel_noise': 1e-8}
@@ -124,35 +123,27 @@ def get_truncated_features(MODEL_PATH, filename, course, path, percentile, featu
     X_a = tf.gather(X, activated, axis=-1)
     X_a = X_a.numpy()
 
-    # # Replace 0 by nan
-    # condition = tf.equal(masks_a, 0)
-    # masks_nan = tf.where(condition, np.nan, masks_a)
-    
     # Expand masks to repeat for each week
     masks_expanded = tf.expand_dims(masks_a, axis=1)
     masks_expanded = tf.repeat(masks_expanded, repeats=[X_a.shape[1]], axis=1)
-    # masks_expanded.shape
     X_masked = masks_expanded*X_a
 
-    # X_masked = tf.where(tf.math.is_nan(X_masked), -1, X_masked)
 
+    return feature_names, masks, X_masked, X, Y
 
-    return feature_names, masks, X_masked, X, Y, P
-
-def get_truncated_features_flatten(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, hard_fail):
-    feature_names, masks, X_masked, X, Y, P = get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, hard_fail)
+def get_truncated_features_flatten(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, norm='min-max'):
+    feature_names, masks, X_masked, X, Y = get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, normalization=norm)
     # Flatten to 2D 
     X_masked = tf.reshape(X_masked,[X_masked.shape[0], X_masked.shape[1]*X_masked.shape[2]])
     
-    return feature_names, masks, X_masked, X, Y, P
+    return feature_names, masks, X_masked, X, Y
 
 
-def get_x_flatten(course, path, percentile, feature_types, metadata, hard_fail):
-    x_train, x_test, x_val, y_train, y_test, y_val, feature_names , patterns = preprocess(course, path, percentile, feature_types, metadata, hard_fail)
+def get_x_flatten(course, path, percentile, feature_types, metadata, norm='min-max'):
+    x_train, x_test, x_val, y_train, y_test, y_val, feature_names = preprocess(course, path, percentile, feature_types, metadata, normalization=norm)
     X = np.concatenate([x_train, x_val, x_test], axis=0)
     Y = np.concatenate([y_train, y_val, y_test], axis=0)
-    P = np.concatenate(patterns, axis=0)
     
     X_flatten = tf.reshape(X,[X.shape[0], X.shape[1]*X.shape[2]])
     print("X_flatten shape: {0}".format(X_flatten.shape))
-    return feature_names, X_flatten, X, Y, P
+    return feature_names, X_flatten, X, Y

@@ -1,0 +1,9 @@
+*.csv
+*.txt
+*.npz
+*.log
+
+*.pyc
+*-checkpoint.ipynb
+/models
+/data

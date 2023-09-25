@@ -21,10 +21,10 @@ class LossL2Reg(tf.Module):
 
 
 class CustomLoss(tf.Module):
-    def __init__(self, alpha=1, n_epochs=100):
+    def __init__(self, alpha=1, n_epochs=100, sparsity_target=0.5):
         super(CustomLoss, self).__init__()
         self.loss_object = tf.keras.losses.BinaryCrossentropy()
-        self.sparsity_loss = SparsityCriterion(n_epochs, sparsity_target=0.5)
+        self.sparsity_loss = SparsityCriterion(n_epochs, sparsity_target=sparsity_target)
         self.alpha = alpha
 
     def __call__(self, y_true, y_pred, meta, training=True):

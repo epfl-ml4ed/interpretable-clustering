@@ -43,7 +43,7 @@ def grad(model, criterion, inputs, targets, meta=None):
   return y_, loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
-def custom_train(model, params, meta, x_train, y_train, x_val=None, y_val=None):
+def custom_train(model, params, meta, x_train, y_train, x_val=None, y_val=None, verbose=True):
   '''Custom training loop
 
   Args:
@@ -71,6 +71,8 @@ def custom_train(model, params, meta, x_train, y_train, x_val=None, y_val=None):
   criterion = CustomLoss(n_epochs=params['epochs'])
   if 'criterion' in params:
     criterion = params['criterion']
+  if 'sparsity_target' in params:
+    criterion = CustomLoss(n_epochs=params['epochs'], sparsity_target=params['sparsity_target'])
 
   # Keep results for plotting
   train_loss_results = []
@@ -103,7 +105,8 @@ def custom_train(model, params, meta, x_train, y_train, x_val=None, y_val=None):
     e_acc = bal_acc.result()
     bal_acc.reset_state()
     train_accuracy_results.append(e_acc)
-    print(f'Epoch {epoch}: \t {e_loss:.4f} loss \t&\t {e_acc:.4f} ROC AUC')
+    if verbose:
+      print(f'Epoch {epoch}: \t {e_loss:.4f} loss \t&\t {e_acc:.4f} ROC AUC')
 
     # Validation
     if x_val is not None:
@@ -116,7 +119,8 @@ def custom_train(model, params, meta, x_train, y_train, x_val=None, y_val=None):
       v_acc = bal_acc.result()
       bal_acc.reset_state()
       val_accuracy_results.append(v_acc)
-      print(f'Validation {epoch}: \t {v_loss:.4f} loss \t&\t {v_acc:.4f} ROC AUC')
+      if verbose:
+        print(f'Validation {epoch}: \t {v_loss:.4f} loss \t&\t {v_acc:.4f} ROC AUC')
 
   # Return scores
   return {

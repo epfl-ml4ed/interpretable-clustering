@@ -132,7 +132,7 @@ def get_truncated_features(MODEL_PATH, filename, course, path, percentile, featu
     return feature_names, masks, X_masked, X, Y
 
 def get_truncated_features_flatten(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, norm='min-max'):
-    feature_names, masks, X_masked, X, Y = get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, normalization=norm)
+    feature_names, masks, X_masked, X, Y = get_truncated_features(MODEL_PATH, filename, course, path, percentile, feature_types, metadata, norm=norm)
     # Flatten to 2D 
     X_masked = tf.reshape(X_masked,[X_masked.shape[0], X_masked.shape[1]*X_masked.shape[2]])
     
@@ -140,7 +140,7 @@ def get_truncated_features_flatten(MODEL_PATH, filename, course, path, percentil
 
 
 def get_x_flatten(course, path, percentile, feature_types, metadata, norm='min-max'):
-    x_train, x_test, x_val, y_train, y_test, y_val, feature_names = preprocess(course, path, percentile, feature_types, metadata, normalization=norm)
+    x_train, x_test, x_val, y_train, y_test, y_val, feature_names = preprocess(course, path, percentile, feature_types, metadata, norm=norm)
     X = np.concatenate([x_train, x_val, x_test], axis=0)
     Y = np.concatenate([y_train, y_val, y_test], axis=0)
     

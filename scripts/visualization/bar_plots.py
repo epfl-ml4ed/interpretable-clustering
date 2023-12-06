@@ -3,31 +3,155 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 
-def distributions_pass_fail(labels, Y):
+def distributions_pass_fail(labels, Y, fname):
     fail_pass_total = []
     fail_pass = []
     for c in range(np.max(np.unique(labels))+1):
         cluster = np.where(labels == c)[0]
         y_cluster = tf.gather(Y, list(cluster)).numpy()
 
-        fail_pass_total.append(("Cluster "+str(c), (y_cluster == 0).sum()/len(Y), (y_cluster == 1).sum()/len(Y)))
         fail_pass.append(("Cluster "+str(c), (y_cluster == 0).sum()/len(y_cluster), (y_cluster == 1).sum()/len(y_cluster)))
+
+    fail_pass.append(("Overall", (Y == 0).sum()/len(Y), (Y == 1).sum()/len(Y)))
     
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-    ax[0].bar([i[0] for i in fail_pass_total], [i[1] for i in fail_pass_total], label="Pass", color='tomato')
-    ax[0].bar([i[0] for i in fail_pass_total], [i[2] for i in fail_pass_total], bottom=[i[1] for i in fail_pass_total], label="Fail", color='c')
-    ax[0].set_title('Distribution of Pass-Fail')
-    ax[0].set_ylabel('Percentage of total students')
-    ax[0].set_xticklabels([i[0] for i in fail_pass_total], rotation=45, ha='right')
-    ax[0].legend()
+    plt.bar([i[0] for i in fail_pass], [i[1] for i in fail_pass], label="Pass", color='c')
+    plt.bar([i[0] for i in fail_pass], [i[2] for i in fail_pass], bottom=[i[1] for i in fail_pass], label="Fail", color='tomato')
+
+    plt.ylabel('Percentage of students', fontsize=18)
+    plt.yticks(fontsize=16)
+    plt.xticks([i[0] for i in fail_pass], rotation=45, ha='right', fontsize=18)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.03), fontsize=18)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['left'].set_visible(True)
+    plt.gca().spines['bottom'].set_visible(True)
     
-    ax[1].bar([i[0] for i in fail_pass], [i[1] for i in fail_pass], label="Pass", color='tomato')
-    ax[1].bar([i[0] for i in fail_pass], [i[2] for i in fail_pass], bottom=[i[1] for i in fail_pass], label="Fail", color='c')
-    ax[1].set_title('Distribution of Pass-Fail')
-    ax[1].set_ylabel('Percentage of students per cluster')
-    ax[1].set_xticklabels([i[0] for i in fail_pass], rotation=45, ha='right')
-    ax[1].legend()
+    plt.gca().spines['left'].set_linewidth(0.4)
+    plt.gca().spines['bottom'].set_linewidth(0.4)
+    
+    plt.gca().spines['left'].set_color('grey')
+    plt.gca().spines['bottom'].set_color('grey')
+
+
+    plt.savefig(fname, bbox_inches='tight')
     plt.show()
+
+def percentage_students_per_feature_grouped_bar(labels, masks, feature_names, Y, fname):
+    f_students = {}
+    stds = {}
+    order = ['Total Time Video', 'Content Alignment', 'Total Time Sessions', 'Total Clicks Video', 
+            'Total Clicks Video Load', 'Std Time Between Sessions', 'Total Time Problem', 'Student Speed']
+    for i in order:
+        f_students[i] = []
+        stds[i] = []
+        
+    for c in range(np.max(labels)+1):
+        cluster = np.where(labels == c)[0]
+        f_activated = tf.reduce_sum(masks, axis=0)
+
+        for i in tf.where(f_activated)[:, 0]:
+            a = np.where(masks[:, i] == 1)[0]
+            a = list(set(a) & set(list(cluster)))
+            l = np.zeros(np.abs(len(cluster)-len(a))).tolist()
+            l.extend([1 for _ in range(len(a))])
+            
+            f_students[feature_names[i]].append(len(a)/len(cluster))
+            stds[feature_names[i]].append(np.std(l))
+            
+    yerr = pd.DataFrame(stds).to_numpy().T
+    df = pd.DataFrame(f_students)
+    index = []
+    for c in range(np.max(labels)+1):
+        index.append('Cluster ' + str(c))
+    df['x'] = index
+
+    df.plot(x='x', 
+            kind='bar', 
+            stacked=False, 
+            figsize=(15,5),
+            fontsize=18,
+            yerr=yerr,
+            error_kw=dict(ecolor='k'),
+            width=0.55,
+            color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:olive', 'tab:pink'])
+    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.03), fontsize=18)
+    plt.xlabel('')
+    plt.xticks(rotation=45)
+    plt.ylabel('Percentage of Students', fontsize=18)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['left'].set_visible(True)
+    plt.gca().spines['bottom'].set_visible(True)
+    
+    plt.gca().spines['left'].set_linewidth(0.4)
+    plt.gca().spines['bottom'].set_linewidth(0.4)
+    
+    plt.gca().spines['left'].set_color('grey')
+    plt.gca().spines['bottom'].set_color('grey')
+    plt.savefig(fname, bbox_inches='tight')
+    plt.show()
+
+def feature_value_grouped_bar(labels, masks, feature_names, X, Y, fname):
+    f_students = {}
+    stds = {}
+    order = ['Total Time Video', 'Content Alignment', 'Total Time Sessions', 'Total Clicks Video', 
+            'Total Clicks Video Load', 'Std Time Between Sessions', 'Total Time Problem', 'Student Speed']
+    for i in order:
+        f_students[i] = []
+        stds[i] = []
+        
+    for c in range(np.max(labels)+1):
+        cluster = np.where(labels == c)[0]
+        f_activated = tf.reduce_sum(masks, axis=0) # select only the activations in the current cluster
+
+        for i in tf.where(f_activated)[:, 0]:
+            a = np.where(masks[:, i] == 1)[0]
+            a = list(set(a) & set(list(cluster)))
+            
+            f_students[feature_names[i]].append(tf.reduce_mean(X[a, :, i]).numpy())
+            stds[feature_names[i]].append(tf.math.reduce_std(X[a, :, i]).numpy())
+
+    # across all clusters
+    for i in tf.where(f_activated)[:, 0]:
+        f_students[feature_names[i]].append(tf.reduce_mean(X[:, :, i]).numpy())
+        stds[feature_names[i]].append(tf.math.reduce_std(X[:, :, i]).numpy())
+            
+    
+    yerr = pd.DataFrame(stds).to_numpy().T
+    df = pd.DataFrame(f_students)
+    index = []
+    for c in range(np.max(labels)+1):
+        index.append('Cluster ' + str(c))
+    index.append('Overall')
+    df['x'] = index
+
+
+    df.plot(x='x', 
+            kind='bar', 
+            stacked=False, 
+            figsize=(15,5),
+            fontsize=18,
+            yerr=yerr,
+            error_kw=dict(ecolor='k'),
+            width=0.65,
+            color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:olive', 'tab:pink'])
+    plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.03), fontsize=18)
+    plt.xlabel('')
+    plt.xticks(rotation=45)
+    plt.ylabel('Feature Value Mean', fontsize=18)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['left'].set_visible(True)
+    plt.gca().spines['bottom'].set_visible(True)
+    
+    plt.gca().spines['left'].set_linewidth(0.4)
+    plt.gca().spines['bottom'].set_linewidth(0.4)
+    
+    plt.gca().spines['left'].set_color('grey')
+    plt.gca().spines['bottom'].set_color('grey')
+    plt.savefig(fname, bbox_inches='tight')
+    plt.show()
+
 
 def failing_distributions(labels, Y):
     fail_pass_total = []
@@ -40,15 +164,15 @@ def failing_distributions(labels, Y):
         fail_pass.append(("Cluster "+str(c), (y_cluster == 0).sum()/len(y_cluster), (y_cluster == 1).sum()/len(y_cluster)))
     
     fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-    # ax[0].bar([i[0] for i in fail_pass_total], [i[1] for i in fail_pass_total], label="Pass", color='tomato')
-    ax[0].bar([i[0] for i in fail_pass_total], [i[2] for i in fail_pass_total], label="Fail", color='c')
+    # ax[0].bar([i[0] for i in fail_pass_total], [i[1] for i in fail_pass_total], label="Pass", color='c')
+    ax[0].bar([i[0] for i in fail_pass_total], [i[2] for i in fail_pass_total], label="Fail", color='tomato')
     ax[0].set_title('Distribution of Pass-Fail')
     ax[0].set_ylabel('Percentage of total students')
     ax[0].set_xticklabels([i[0] for i in fail_pass_total], rotation=45, ha='right')
     ax[0].legend()
     
-    # ax[1].bar([i[0] for i in fail_pass], [i[1] for i in fail_pass], label="Pass", color='tomato')
-    ax[1].bar([i[0] for i in fail_pass], [i[2] for i in fail_pass], label="Fail", color='c')
+    # ax[1].bar([i[0] for i in fail_pass], [i[1] for i in fail_pass], label="Pass", color='c')
+    ax[1].bar([i[0] for i in fail_pass], [i[2] for i in fail_pass], label="Fail", color='tomato')
     ax[1].set_title('Distribution of Pass-Fail')
     ax[1].set_ylabel('Percentage of students per cluster')
     ax[1].set_xticklabels([i[0] for i in fail_pass], rotation=45, ha='right')
@@ -59,23 +183,25 @@ def number_students_per_feature(labels, masks, feature_names, Y):
     df = pd.DataFrame()
     clusters_length = []
     avg_feat_per_cluster = []
+
     for c in range(np.max(labels)+1):
         cluster = np.where(labels == c)[0]
         clusters_length.append(len(cluster))
         avg_feat = np.mean(tf.reduce_sum(tf.gather(masks, list(cluster)), axis=1))
         avg_feat_per_cluster.append(avg_feat)
 
-        f_activated = tf.reduce_sum(tf.gather(masks, list(cluster)), axis=0)
-
+        f_activated = tf.reduce_sum(masks, axis=0)
         f_students = []
+
         for i in tf.where(f_activated)[:, 0]:
+            
             a = np.where(masks[:, i] == 1)[0]
             a = list(set(a) & set(list(cluster)))
 
             f_students.append((feature_names[i], (Y[a] == 0).sum(), (Y[a] == 1).sum()))
 
-        plt.barh([i[0] for i in f_students], [i[1] for i in f_students], label="Pass", color='tomato')
-        plt.barh([i[0] for i in f_students], [i[2] for i in f_students], left=[i[1] for i in f_students], label="Fail", color='c')
+        plt.barh([i[0] for i in f_students], [i[1] for i in f_students], label="Pass", color='c')
+        plt.barh([i[0] for i in f_students], [i[2] for i in f_students], left=[i[1] for i in f_students], label="Fail", color='tomato')
         plt.title('Cluster '+str(c))
         plt.xlabel('Number of students with feature activated')
         plt.legend()
@@ -90,7 +216,7 @@ def number_students_per_feature(labels, masks, feature_names, Y):
 def percentage_students_per_feature(labels, masks, feature_names, Y):
     for c in range(np.max(labels)+1):
         cluster = np.where(labels == c)[0]
-        f_activated = tf.reduce_sum(tf.gather(masks, list(cluster)), axis=0)
+        f_activated = tf.reduce_sum(masks, axis=0)
 
         f_students = []
         for i in tf.where(f_activated)[:, 0]:
@@ -99,13 +225,14 @@ def percentage_students_per_feature(labels, masks, feature_names, Y):
 
             f_students.append((feature_names[i], [(Y[a] == 0).sum()/len(cluster), (Y[a] == 1).sum()/len(cluster)]))
 
-        plt.barh([i[0] for i in f_students], [i[1][0] for i in f_students], label="Pass", color='tomato')
-        plt.barh([i[0] for i in f_students], [i[1][1] for i in f_students], left=[i[1][0] for i in f_students], label="Fail", color='c')
-        plt.title('Cluster '+str(c))
-        plt.xlabel('Percentage of students with feature activated')
-        plt.legend()
+        plt.barh([i[0] for i in f_students], [i[1][0] for i in f_students], label="Pass", color='c')
+        plt.barh([i[0] for i in f_students], [i[1][1] for i in f_students], left=[i[1][0] for i in f_students], label="Fail", color='tomato')
+        
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.xlabel('Percentage of students', fontsize=14)
+        plt.legend(fontsize=14)
         plt.show()
-
 
 def feature_value(labels, masks, feature_names, X, Y):
     f_students = {}
@@ -120,10 +247,11 @@ def feature_value(labels, masks, feature_names, X, Y):
                 total_mean_max = tf.reduce_mean(X[:, :, i])
 
         f_students[c] = []
-    
+        f_activated = tf.reduce_sum(masks, axis=0) # so we can keep the same axis for all plots
+
         for i in tf.where(f_activated)[:, 0]:
             a = np.where(masks[:, i] == 1)[0]
-            a = list(set(a) & set(list(cluster))) 
+            a = list(set(a) & set(list(cluster))) # select only the activations in the current cluster
             
             target_0 = [j for j in a if Y[j] == 0]
             target_1 = [j for j in a if Y[j] == 1]
@@ -144,11 +272,13 @@ def feature_value(labels, masks, feature_names, X, Y):
                     xlim_max = tf.reduce_mean(X[target_0, :, i])
 
     for c in range(np.max(labels)+1):
-        plt.barh([i[0] for i in f_students[c]], [i[1][0] for i in f_students[c]], label="Pass", color='tomato')
-        plt.barh([i[0] for i in f_students[c]], [i[1][1] for i in f_students[c]], left=[i[1][0] for i in f_students[c]], label="Fail", color='c')
-        plt.title('Cluster '+str(c))
-        plt.xlabel('Feature Value Mean')
-        plt.legend()
+        plt.barh([i[0] for i in f_students[c]], [i[1][0] for i in f_students[c]], label="Pass", color='c')
+        plt.barh([i[0] for i in f_students[c]], [i[1][1] for i in f_students[c]], left=[i[1][0] for i in f_students[c]], label="Fail", color='tomato')
+        
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.xlabel('Feature Value Mean', fontsize=14)
+        plt.legend(fontsize=14)
         plt.xlim(0, xlim_max + 0.05)
         plt.show()
 
@@ -160,7 +290,7 @@ def relative_feature_value(labels, masks, feature_names, X, Y):
     f_students = {}
     for c in range(np.max(labels)+1):
         cluster = np.where(labels == c)[0]
-        f_activated = tf.reduce_sum(tf.gather(masks, list(cluster)), axis=0)
+        f_activated = tf.reduce_sum(masks, axis=0)
 
         f_students[c] = []
         for i in tf.where(f_activated)[:, 0]:
@@ -197,8 +327,8 @@ def relative_feature_value(labels, masks, feature_names, X, Y):
                     xlim_min = x
 
     for c in range(np.max(labels)+1):
-        plt.barh([i[0] for i in f_students[c]], [i[1][0] for i in f_students[c]], label="Pass", color='tomato')
-        plt.barh([i[0] for i in f_students[c]], [i[1][1] for i in f_students[c]], left=[i[1][0] for i in f_students[c]], label="Fail", color='c')
+        plt.barh([i[0] for i in f_students[c]], [i[1][0] for i in f_students[c]], label="Pass", color='c')
+        plt.barh([i[0] for i in f_students[c]], [i[1][1] for i in f_students[c]], left=[i[1][0] for i in f_students[c]], label="Fail", color='tomato')
         plt.title('Cluster '+str(c))
         plt.xlabel('Relative Feature Value Mean')
         plt.legend()

@@ -4,6 +4,9 @@
 *.log
 *.npy
 *.pkl
+*.png
+*.jpeg
+*.pdf
 
 *.pyc
 *-checkpoint.ipynb

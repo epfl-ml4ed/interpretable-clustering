@@ -11,11 +11,11 @@ def create_flow(data1, data2, label1, label2, Y):
             intersection = list(set(ind_0).intersection(set(ind_1)))
             pass_ = np.where(Y[intersection]==0)[0].tolist()
             fail = np.where(Y[intersection]==1)[0].tolist()
-            source.append(label1+'_'+str(i))
-            target.append(label2+'_'+str(j))
+            source.append(label1+', Cluster '+str(i))
+            target.append(label2+', Cluster '+str(j))
             values.append(len(pass_))
-            source.append(label1+'_'+str(i))
-            target.append(label2+'_'+str(j))
+            source.append(label1+', Cluster '+str(i))
+            target.append(label2+', Cluster '+str(j))
             values.append(len(fail))
 
 def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y, gamma=False, g=0):
@@ -28,7 +28,7 @@ def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y, gam
    
     node_label = []
     for p in percentile_list:
-        node_label.extend(["Week"+str(p).split('.')[1]+'_'+str(i) for i in np.unique(labels[p])])
+        node_label.extend(['Week '+str(p).split('.')[1]+', Cluster '+str(i) for i in np.unique(labels[p])])
        
     node_dict = {y:x for x, y in enumerate(node_label)}
     
@@ -42,7 +42,7 @@ def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y, gam
     for i in range(len(percentile_list)-1):
         p = percentile_list[i]
         next_p = percentile_list[i+1]
-        create_flow(labels[p], labels[next_p], "Week"+str(p).split('.')[1], "Week"+str(next_p).split('.')[1], Y)
+        create_flow(labels[p], labels[next_p], 'Week '+str(p).split('.')[1], 'Week '+str(next_p).split('.')[1], Y)
 
     source_node = [node_dict[x] for x in source]
     target_node = [node_dict[x] for x in target]
@@ -73,9 +73,16 @@ def create_sankey_diagram(labels_cluster_path, filename, percentile_list, Y, gam
     # With this save the plots 
     plot(fig,
         image_filename='sankey_plot_1', 
-        image='png', 
+        image='jpeg', 
         image_width=1000, 
-        image_height=600
+        image_height=600,
     )
+
+    fig.update_layout(
+    font=dict(
+        family="Courier New, monospace",
+        size=14
+    )
+)
     # And shows the plot
     fig.show()

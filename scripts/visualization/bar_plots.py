@@ -1,19 +1,22 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import seaborn as sns 
 import tensorflow as tf
 
 def distributions_pass_fail(labels, Y, fname):
     fail_pass_total = []
     fail_pass = []
+    number_students = {}
+
     for c in range(np.max(np.unique(labels))+1):
         cluster = np.where(labels == c)[0]
         y_cluster = tf.gather(Y, list(cluster)).numpy()
-
+        number_students["Cluster "+str(c)] = len(y_cluster)
         fail_pass.append(("Cluster "+str(c), (y_cluster == 0).sum()/len(y_cluster), (y_cluster == 1).sum()/len(y_cluster)))
 
     fail_pass.append(("Overall", (Y == 0).sum()/len(Y), (Y == 1).sum()/len(Y)))
-    
+    number_students['Overall'] = len(Y)
     plt.bar([i[0] for i in fail_pass], [i[1] for i in fail_pass], label="Pass", color='c')
     plt.bar([i[0] for i in fail_pass], [i[2] for i in fail_pass], bottom=[i[1] for i in fail_pass], label="Fail", color='tomato')
 
@@ -31,7 +34,6 @@ def distributions_pass_fail(labels, Y, fname):
     
     plt.gca().spines['left'].set_color('grey')
     plt.gca().spines['bottom'].set_color('grey')
-
 
     plt.savefig(fname, bbox_inches='tight')
     plt.show()
@@ -70,8 +72,6 @@ def percentage_students_per_feature_grouped_bar(labels, masks, feature_names, Y,
             stacked=False, 
             figsize=(15,5),
             fontsize=18,
-            yerr=yerr,
-            error_kw=dict(ecolor='k'),
             width=0.55,
             color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:olive', 'tab:pink'])
     plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.03), fontsize=18)
@@ -131,8 +131,8 @@ def feature_value_grouped_bar(labels, masks, feature_names, X, Y, fname):
             stacked=False, 
             figsize=(15,5),
             fontsize=18,
-            yerr=yerr,
-            error_kw=dict(ecolor='k'),
+            # yerr=yerr,
+            # error_kw=dict(ecolor='k'),
             width=0.65,
             color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:olive', 'tab:pink'])
     plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.03), fontsize=18)
@@ -152,6 +152,75 @@ def feature_value_grouped_bar(labels, masks, feature_names, X, Y, fname):
     plt.savefig(fname, bbox_inches='tight')
     plt.show()
 
+def feature_value_boxplot(labels, masks, feature_names, X, Y, fname):
+    f_students = {}
+    stds = {}
+    order = ['Total Time Video', 'Content Alignment', 'Total Time Sessions', 'Total Clicks Video', 
+            'Total Clicks Video Load', 'Std Time Between Sessions', 'Total Time Problem', 'Student Speed']
+    for c in range(np.max(labels)+2):
+        f_students[c] = {}
+        for i in order:
+            f_students[c][i] = []
+        
+    for c in range(np.max(labels)+1):
+        cluster = np.where(labels == c)[0]
+        f_activated = tf.reduce_sum(masks, axis=0)
+
+        for i in tf.where(f_activated)[:, 0]:
+            a = np.where(masks[:, i] == 1)[0]
+            a = list(set(a) & set(list(cluster))) 
+            f_students[c][feature_names[i]].append(tf.reduce_mean(X[a, :, i], axis=1).numpy())
+
+    # across all clusters
+    for i in tf.where(f_activated)[:, 0]:
+        f_students[np.max(labels)+1][feature_names[i]].append(tf.reduce_mean(X[:, :, i], axis=1).numpy())
+        
+    data = []
+    for c in f_students:
+        for f in f_students[c]:
+            if c == np.max(labels)+1:
+                data.append((f_students[c][f][0], 'Overall;'+f))
+            else:
+                data.append((f_students[c][f][0], 'Cluster '+str(c)+';'+f))
+                
+    # Create the DataFrame
+    df = pd.DataFrame(data, columns=['Feature Value', 'Config'])
+
+    # Explode the 'Force' column to stack the NumPy arrays
+    df = df.explode('Feature Value', ignore_index=True)
+    
+    df[['Group', 'Subgroup']] = df['Config'].str.split(pat=";", expand=True)
+    
+    # Create a box plot using Seaborn with custom spacing
+    plt.figure(figsize=(15, 5))
+    
+    index = []
+    for c in range(np.max(labels)+1):
+        index.append('Cluster ' + str(c))
+    index.append('Overall')
+
+    ax = sns.boxplot(x='Group', order=index,
+                     hue='Subgroup',
+                     y='Feature Value', data=df,
+                     palette=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:olive', 'tab:pink'])
+    ax.set_ylabel('Feature Value', fontsize=18)
+    
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=18,  borderaxespad=0.)
+    plt.tight_layout()
+    plt.xlabel('')
+    plt.xticks(rotation=45, fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['left'].set_visible(True)
+    plt.gca().spines['bottom'].set_visible(True)
+    
+    plt.gca().spines['left'].set_linewidth(0.4)
+    plt.gca().spines['bottom'].set_linewidth(0.4)
+    plt.gca().spines['left'].set_color('grey')
+    plt.gca().spines['bottom'].set_color('grey')
+    plt.savefig(fname, bbox_inches='tight')
+    plt.show()
 
 def failing_distributions(labels, Y):
     fail_pass_total = []

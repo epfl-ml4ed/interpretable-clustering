@@ -1,14 +1,4 @@
-# explainable-clustering
+# Interpret3C: Enhancing Clustering Through Individualized Feature Selection
 
-**Professor**: Tanja Käser
+Clustering in education, particularly in large-scale online environments like MOOCs, is essential for understanding and addressing diverse student needs. However, the effectiveness of clustering depends on its interpretability, which becomes challenging with high-dimensional data. Existing clustering approaches often neglect individual differences in feature importance and rely on a homogenized feature set. Addressing this gap, we introduce Interpret3C (Interpretable Conditional Computation Clustering), a novel clustering pipeline that incorporates interpretable neural networks (NNs) in an unsupervised learning context. This method leverages adaptive gating in NNs to select features for each student. Then, clustering is performed using the most relevant features per student, enhancing clusters' relevance and interpretability. We evaluated our pipeline on 21 MOOCs, encompassing over $50,000$ enrollments to investigate the emergence of behavioral clusters considering individual feature importances, the evolution of these clusters throughout the course duration, and the variability of cluster characteristics across different courses. This research contributes to the field by offering a scalable, robust clustering methodology for tabular or time-series that respects individual differences and improves interpretability when using high-dimensional data.
 
-**PhD** **Supervisors**: Vinitra Swamy, Paola Mejia
-
-**Student**: Isadora Salles, Summer 2023
-
-💡 This project is aimed at creating a new clustering pipeline designed for explainability.  
-
-💻 We use a discriminator neural network with a strong sparsity criterion to dynamically select a subset of important features per student.  
-
-📊 We then experiment with clustering on this truncated set and examine the interpretability of the clusters.   
- 

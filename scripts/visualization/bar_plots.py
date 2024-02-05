@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib
 import operator
 import pandas as pd
 import numpy as np
@@ -164,6 +165,9 @@ def percentage_students_per_feature_grouped_bar_shiffted(labels, masks, feature_
     # Split each category name by spaces and join with a newline character
     df['x'] = ['\n'.join(c.split()) for c in df['x']]
 
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", ["seagreen","crimson"], N=6)
+    color_list = [matplotlib.colors.rgb2hex(cmap(i)) for i in range(cmap.N)]
+    color_list.append("darkgrey")
     
     df.plot(x='x', 
             kind='bar', 
@@ -171,9 +175,10 @@ def percentage_students_per_feature_grouped_bar_shiffted(labels, masks, feature_
             figsize=(12,4),
             fontsize=20,
             width=0.65,
-            color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:pink'])
+            color=color_list)
     plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.03), fontsize=20)
     plt.xticks(rotation=0)
+    plt.xlabel('')
     plt.ylabel('Percentage of Students', fontsize=22)
     plt.gca().spines['right'].set_visible(False)
     plt.gca().spines['top'].set_visible(False)
@@ -272,15 +277,11 @@ def feature_value_boxplot(labels, masks, feature_names, X, Y, fname):
         f_students[np.max(labels)+1][feature_names[i]].append(tf.reduce_mean(X[:, :, i], axis=1).numpy())
         
     data = []
-    # dict_names = {  1: 'A',
-    #                 0: 'B',
-    #                 2: 'C'}
     for c in f_students:
         for f in f_students[c]:
             if c == np.max(labels)+1:
                 data.append((f_students[c][f][0], 'Overall;'+f))
             else:
-                # data.append((f_students[c][f][0], dict_names[c]+';'+f))
                 data.append((f_students[c][f][0], string.ascii_uppercase[c]+';'+f))
                 
     # Create the DataFrame
@@ -334,7 +335,6 @@ def feature_value_boxplot_shiffted(labels, masks, feature_names, X, Y, fname):
         for i in order:
             f_students[c]['\n'.join(i.split())] = []
         
-    # for c in range(np.max(labels)+1):
     for c in range(np.max(labels)+1):
         cluster = np.where(labels == c)[0]
         f_activated = tf.reduce_sum(masks, axis=0)
@@ -364,6 +364,9 @@ def feature_value_boxplot_shiffted(labels, masks, feature_names, X, Y, fname):
     
     df[['Group', 'Subgroup']] = df['Config'].str.split(pat=";", expand=True)
 
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", ["seagreen","red"], N=6)
+    color_list = [matplotlib.colors.rgb2hex(cmap(i)) for i in range(cmap.N)]
+    color_list.append("darkgrey")
     
     # Create a box plot using Seaborn with custom spacing
     plt.figure(figsize=(15, 5))
@@ -373,7 +376,7 @@ def feature_value_boxplot_shiffted(labels, masks, feature_names, X, Y, fname):
     ax = sns.boxplot(x='Subgroup', order=index,
                      hue='Group',
                      y='Feature Value', data=df,
-                     palette=['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'c', 'tab:pink'])
+                     palette=color_list)
     ax.set_ylabel('Feature Value', fontsize=22)
     
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=22,  borderaxespad=0.)

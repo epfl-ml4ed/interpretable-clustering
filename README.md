@@ -1,6 +1,6 @@
 # Interpret3C: Interpretable Clustering
 
-This repository is the official implementation of the AIED 2024 LBR Paper entitled ["Interpret3C: Interpretable Student Clustering Through Individualized Feature Selection"]() written by [Isadora Salles](https://github.com/isadorasalles), [Paola Mejia-Domenzain](https://github.com/paola-md)*, [Vinitra Swamy*](http://github.com/vinitra), [Julian Blackwell](https://ch.linkedin.com/in/julian-blackwell-93407a13b), and [Tanja Käser](https://people.epfl.ch/tanja.kaeser/?lang=en).
+This repository is the official implementation of the AIED 2024 LBR Paper entitled ["Interpret3C: Interpretable Student Clustering Through Individualized Feature Selection"]() written by [Isadora Salles](https://github.com/isadorasalles), [Paola Mejia-Domenzain*](https://github.com/paola-md), [Vinitra Swamy*](http://github.com/vinitra), [Julian Blackwell](https://ch.linkedin.com/in/julian-blackwell-93407a13b), and [Tanja Käser](https://people.epfl.ch/tanja.kaeser/?lang=en).
 
 ## Overview
 
